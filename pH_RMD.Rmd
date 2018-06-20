@@ -1,0 +1,90 @@
+---
+title: "Atlantis pH models"
+author: "Alberto Rovellini"
+date: "20 June 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(ggplot2)
+require(reshape2)
+```
+
+## Monod
+
+```{r Monod}
+pH <- seq(1,12,0.1)
+
+pH_const_A.monod <- 6 # this is meant as minimum value under which the process does not happen
+pH_const_B.monod <- 10
+KN_pH <- 25
+
+pHCorr.monod <- pH_const_B.monod * (pH-pH_const_A.monod)/((KN_pH - pH_const_A.monod)+(pH - pH_const_A.monod))
+
+```
+
+## Non-linear
+
+```{r non-linear}
+pH_const_A.nl <- 1.0
+pH_const_B.nl <- 1.18
+pH_correction <- 15
+opt_pH <- 8.1
+
+step1 <- log10(2) * pH_const_A.nl * pH_const_B.nl^pH 
+step2 <- exp(-1.0 * (abs(pH - opt_pH)^3.0) / pH_correction)
+pHCorr.nl = step1 * step2
+
+```
+
+# Linear
+
+```{r linear}
+pH_const_A.lin <- 0
+pH_const_B.lin <- 0.1234568 # 1/8.1
+
+pHCorr.lin <- pH_const_A.lin + pH_const_B.lin * pH
+
+```
+
+## Piece-wise
+
+This is an updated version as the one in the Atlantis code does not seem to be correct.
+
+```{r piece-wise}
+pH_const_A.pw <- 0.2
+pH_const_B.pw <- 1
+pHmin <- 7.2
+pHmax <- 8.1
+
+pHCorr.pw <- rep(NA, length(pH))
+
+for (i in 1:length(pH)) {
+  if (pH[i] < pHmin) {
+    pHCorr.pw[i] <- pH_const_A.pw
+  } else if (pH[i] > pHmax) {
+    pHCorr.pw[i] <- pH_const_B.pw
+  } else {
+    pHCorr.pw[i] <- pH_const_A.pw + ((pH[i]-pHmin)/(pHmax-pHmin)*(pH_const_B.pw - pH_const_A.pw))
+  }
+}
+
+```
+
+Bring them together and plot them.
+
+```{r}
+df <- data.frame(pH, pHCorr.monod, pHCorr.lin, pHCorr.nl, pHCorr.pw)
+melt.df <- melt(df, id.vars = "pH", variable.name = "Model", value.name = "pHCorr")
+
+p <- ggplot(data = melt.df, aes(x = pH, y = pHCorr, group = Model))+
+  geom_line()+
+  geom_hline(yintercept = c(0, 1), col = "red")+
+  geom_vline(xintercept = c(8.1, 6.7), col = "blue")+
+  scale_x_continuous(breaks = seq(0,12,1))+
+  theme_bw()+
+  facet_wrap(~ Model, scales = "free")
+p
+```
+

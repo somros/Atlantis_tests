@@ -1,8 +1,10 @@
 # sedimentation: calculation of S
 
-Ksmother_coefft <- 0.054 # this is as in Guam .prm file. Even 0 sed will cut growth
-Ksmother_const <- 0.4622
+Ksmother_coefft <- 1.031 # this is as in GBR .prm file. Asymptote to the curve
+Ksmother_const <-  0.0603 # the complement to 1 of this is the first point of the curve basically
 sed_level <- 0:1000 # not sure of the units over here, if a tracer probably still mg N m-3
+
+# CAREFUL: CURRENT PARAMETRISATION IMPOSES A VERY STRONG SEDIMENT LIMITATION!
 
 # code as in Coral_Consumer_Activities()
 
